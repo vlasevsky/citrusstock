@@ -1,5 +1,6 @@
 package com.citrusmall.citrusstock.model;
 import com.citrusmall.citrusstock.model.enums.ProductBatchStatus;
+import com.citrusmall.citrusstock.model.enums.Zone;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -16,7 +17,6 @@ public class ProductBatch {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
     private Product product;
@@ -31,8 +31,10 @@ public class ProductBatch {
     @Enumerated(EnumType.STRING)
     private ProductBatchStatus status;
 
-    // Связь с коробками (один ко многим)
+    // New field: Zone of the batch. Default is RECEIVING.
+    @Enumerated(EnumType.STRING)
+    private Zone zone = Zone.RECEIVING;
+
     @OneToMany(mappedBy = "productBatch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Box> boxes;
-
 }

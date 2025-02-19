@@ -19,13 +19,15 @@ CREATE TABLE suppliers (
 );
 
 -- Create Product Batches table
+-- Note: product_id and supplier_id are nullable (as per our DTO, these fields are optional)
 CREATE TABLE product_batches (
                                  id BIGSERIAL PRIMARY KEY,
-                                 product_id BIGINT NOT NULL,
-                                 supplier_id BIGINT NOT NULL,
+                                 product_id BIGINT,
+                                 supplier_id BIGINT,
                                  total_boxes INT NOT NULL,
                                  received_at TIMESTAMP NOT NULL,
                                  status VARCHAR(50) NOT NULL,
+                                 zone VARCHAR(50) NOT NULL DEFAULT 'RECEIVING',
                                  FOREIGN KEY (product_id) REFERENCES products(id),
                                  FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
 );

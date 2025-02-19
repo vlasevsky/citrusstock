@@ -2,12 +2,14 @@ package com.citrusmall.citrusstock.model;
 
 import com.citrusmall.citrusstock.model.enums.ScanMode;
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 
 @Entity
 @Table(name = "scan_events")
+@Data
 public class ScanEvent {
 
     @Id

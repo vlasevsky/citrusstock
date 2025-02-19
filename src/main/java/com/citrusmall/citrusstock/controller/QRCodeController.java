@@ -19,16 +19,6 @@ public class QRCodeController {
     @Autowired
     private QrOutputService qrOutputService;
 
-    /**
-     * Unified endpoint for generating QR code outputs for a product batch.
-     * The "format" parameter specifies the desired output format ("pdf", "zip", or "png").
-     *
-     * Example: /api/qr/generate/batch/1?format=pdf
-     *
-     * @param batchId the identifier of the ProductBatch
-     * @param format  the desired format (default is "pdf")
-     * @return HTTP response containing the generated output
-     */
     @GetMapping("/generate/batch/{batchId}")
     public ResponseEntity<byte[]> generateOutput(
             @PathVariable Long batchId,
