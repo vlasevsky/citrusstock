@@ -1,8 +1,64 @@
-# Default ignored files
-/shelf/
-/.idea/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
-/dataSources/
-/dataSources.local.xml
+# =====================
+# Maven/Java Build Files
+# =====================
+# Каталог сборки Maven (содержит скомпилированные классы, пакеты и прочее)
+target/
+
+# Файлы, создаваемые Maven при сборке или выпуске
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# =====================
+# Java Compiled Files
+# =====================
+# Скомпилированные файлы классов Java
+*.class
+
+# =====================
+# Package Files
+# =====================
+# JAR, WAR, EAR файлы, генерируемые из проекта
+*.jar
+*.war
+*.ear
+
+# =====================
+# Log Files
+# =====================
+# Лог-файлы приложения и сервера
+*.log
+
+# =====================
+# IDE / Editor Files
+# =====================
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# =====================
+# Operating System Files
+# =====================
+# Файлы, создаваемые ОС (например, macOS, Windows)
+.DS_Store
+Thumbs.db
+
+# =====================
+# Temporary Files
+# =====================
+# Резервные файлы, временные файлы редакторов и пр.
+*~
+*.swp
+*.swo
