@@ -1,4 +1,4 @@
--- Drop tables if they exist (order matters due to foreign key constraints)
+-- Drop tables in reverse order (учитывая внешние ключи)
 DROP TABLE IF EXISTS scan_events;
 DROP TABLE IF EXISTS boxes;
 DROP TABLE IF EXISTS product_batches;
@@ -18,13 +18,11 @@ CREATE TABLE suppliers (
                            name VARCHAR(255) NOT NULL
 );
 
--- Create Product Batches table
--- Note: product_id and supplier_id are nullable (as per our DTO, these fields are optional)
+-- Create Product Batches table (без поля total_boxes)
 CREATE TABLE product_batches (
                                  id BIGSERIAL PRIMARY KEY,
                                  product_id BIGINT,
                                  supplier_id BIGINT,
-                                 total_boxes INT NOT NULL,
                                  received_at TIMESTAMP NOT NULL,
                                  status VARCHAR(50) NOT NULL,
                                  zone VARCHAR(50) NOT NULL DEFAULT 'RECEIVING',
@@ -32,10 +30,10 @@ CREATE TABLE product_batches (
                                  FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
 );
 
--- Create Boxes table
+-- Create Boxes table (с полем code для хранения QR-кода)
 CREATE TABLE boxes (
                        id BIGSERIAL PRIMARY KEY,
-                       code VARCHAR(255),
+                       code TEXT,
                        product_batch_id BIGINT NOT NULL,
                        status VARCHAR(50),
                        scanned_at TIMESTAMP,

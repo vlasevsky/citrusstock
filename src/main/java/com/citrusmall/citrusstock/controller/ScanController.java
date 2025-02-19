@@ -1,5 +1,6 @@
 package com.citrusmall.citrusstock.controller;
 
+import com.citrusmall.citrusstock.model.enums.ScanMode;
 import com.citrusmall.citrusstock.service.ScanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,40 +17,33 @@ public class ScanController {
     private ScanService scanService;
 
     /**
-     * Endpoint for scanning a new box upon arrival.
-     * Example: POST /api/warehouse/scans/new/{boxId}?userId=123
+     * Единый эндпоинт для сканирования коробки.
+     * Принимает параметр scanMode (ON_WAREHOUSE для новых товаров, SHIPMENT для отгрузки).
      *
-     * @param boxId  the ID of the box
-     * @param userId the ID of the scanning operator
-     * @return a success message
+     * Пример запроса:
+     * POST /api/warehouse/scans/{boxId}?userId=123&scanMode=ON_WAREHOUSE
+     *
+     * @param boxId    ID коробки
+     * @param userId   ID оператора
+     * @param scanMode Режим сканирования (ON_WAREHOUSE или SHIPMENT)
+     * @return сообщение об успешном выполнении операции или ошибке
      */
-    @PostMapping("/new/{boxId}")
-    public ResponseEntity<String> scanNewBox(@PathVariable Long boxId, @RequestParam Long userId) {
+    @PostMapping("/{boxId}")
+    public ResponseEntity<String> scanBox(@PathVariable Long boxId,
+                                          @RequestParam Long userId,
+                                          @RequestParam ScanMode scanMode) {
         try {
-            scanService.scanNewBox(boxId, userId);
-            return ResponseEntity.ok("Box scanned (new product) successfully.");
+            if (scanMode == ScanMode.ON_WAREHOUSE) {
+                scanService.scanNewBox(boxId, userId);
+            } else if (scanMode == ScanMode.SHIPMENT) {
+                scanService.scanBoxForShipment(boxId, userId);
+            } else {
+                throw new IllegalArgumentException("Unsupported scan mode: " + scanMode);
+            }
+            return ResponseEntity.ok("Box scanned successfully.");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error scanning new box: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Endpoint for scanning a box for shipment.
-     * Example: POST /api/warehouse/scans/shipment/{boxId}?userId=123
-     *
-     * @param boxId  the ID of the box
-     * @param userId the ID of the scanning operator
-     * @return a success message
-     */
-    @PostMapping("/shipment/{boxId}")
-    public ResponseEntity<String> scanBoxForShipment(@PathVariable Long boxId, @RequestParam Long userId) {
-        try {
-            scanService.scanBoxForShipment(boxId, userId);
-            return ResponseEntity.ok("Box scanned for shipment successfully.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.badRequest().body("Error scanning box for shipment: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error scanning box: " + e.getMessage());
         }
     }
 }

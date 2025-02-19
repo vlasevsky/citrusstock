@@ -1,16 +1,17 @@
 package com.citrusmall.citrusstock.dto;
 
-import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
-public class ProductBatchCreateRequest {
+public class ProductBatchResponse {
+    private Long id;
     private Long productId;
     private Long supplierId;
-
-    @Min(value = 1, message = "Total boxes must be non-negative")
-    private Integer totalBoxes;
     private LocalDateTime receivedAt;
+    private String status;
+    private String zone;
+    private List<BoxResponse> boxes;
 }

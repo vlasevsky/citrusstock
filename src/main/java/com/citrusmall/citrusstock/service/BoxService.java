@@ -16,23 +16,41 @@ public class BoxService {
 
     @Autowired
     private BoxRepository boxRepository;
+
     @Autowired
     private ProductBatchRepository productBatchRepository;
 
-
     public Box createBox(BoxCreateRequest request) {
-        ProductBatch batch = productBatchRepository.findById(request.getProductBatchId())
-                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + request.getProductBatchId()));
-
         Box box = new Box();
-        box.setProductBatch(batch);
+        box.setProductBatch(productBatchRepository.findById(request.getProductBatchId())
+                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + request.getProductBatchId())));
         box.setStatus(BoxStatus.GENERATED);
-
         return boxRepository.save(box);
     }
 
-    public List<Box> getBoxesByBatchId(Long batchId) {
-        return boxRepository.findByProductBatch_Id(batchId);
+    public Box getBoxById(Long id) {
+        return boxRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Box not found with id " + id));
     }
 
+    public List<Box> getAllBoxes() {
+        return boxRepository.findAll();
+    }
+
+    public Box updateBox(Long id, Box boxDetails) {
+        Box box = getBoxById(id);
+        box.setCode(boxDetails.getCode());
+        box.setStatus(boxDetails.getStatus());
+        box.setScannedAt(boxDetails.getScannedAt());
+        box.setScannedBy(boxDetails.getScannedBy());
+        return boxRepository.save(box);
+    }
+
+    public void deleteBox(Long id) {
+        boxRepository.deleteById(id);
+    }
+
+    public List<Box> getBoxesByProductBatchId(Long batchId) {
+        return boxRepository.findByProductBatch_Id(batchId);
+    }
 }

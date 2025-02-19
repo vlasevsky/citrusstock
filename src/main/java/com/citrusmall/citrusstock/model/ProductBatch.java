@@ -1,6 +1,7 @@
 package com.citrusmall.citrusstock.model;
 import com.citrusmall.citrusstock.model.enums.ProductBatchStatus;
 import com.citrusmall.citrusstock.model.enums.Zone;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -25,11 +26,11 @@ public class ProductBatch {
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
 
-    private Integer totalBoxes;
+   // private Integer totalBoxes;
     private LocalDateTime receivedAt;
 
     @Enumerated(EnumType.STRING)
-    private ProductBatchStatus status;
+    private ProductBatchStatus status = ProductBatchStatus.REGISTERED;
 
     // New field: Zone of the batch. Default is RECEIVING.
     @Enumerated(EnumType.STRING)

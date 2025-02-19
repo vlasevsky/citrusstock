@@ -28,10 +28,16 @@ public class QRCodeContentBuilder {
         if (batch.getId() == null) {
             throw new IllegalArgumentException("Batch ID is not provided");
         }
-        if (batch.getTotalBoxes() == null) {
+        if (batch.getBoxes().isEmpty()) {
             throw new IllegalArgumentException("Total number of boxes is not provided for the batch");
         }
 
+        Map<String, Object> data = getStringObjectMap(box, batch);
+
+        return mapper.writeValueAsString(data);
+    }
+
+    private static Map<String, Object> getStringObjectMap(Box box, ProductBatch batch) {
         Product product = batch.getProduct();
         if (product == null) {
             throw new IllegalArgumentException("Product is not provided for the batch");
@@ -47,9 +53,8 @@ public class QRCodeContentBuilder {
         data.put("productId", product.getId());
         data.put("productName", product.getName());
         data.put("batchId", batch.getId());
-        data.put("totalBoxes", batch.getTotalBoxes());
+        data.put("totalBoxes", batch.getBoxes().size());
         data.put("boxId", box.getId());
-
-        return mapper.writeValueAsString(data);
+        return data;
     }
 }
