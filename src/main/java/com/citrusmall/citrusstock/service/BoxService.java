@@ -3,7 +3,7 @@ package com.citrusmall.citrusstock.service;
 import com.citrusmall.citrusstock.dto.BoxCreateRequest;
 import com.citrusmall.citrusstock.model.Box;
 import com.citrusmall.citrusstock.model.ProductBatch;
-import com.citrusmall.citrusstock.model.enums.BoxStatus;
+import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import com.citrusmall.citrusstock.repository.BoxRepository;
 import com.citrusmall.citrusstock.repository.ProductBatchRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,9 +22,10 @@ public class BoxService {
 
     public Box createBox(BoxCreateRequest request) {
         Box box = new Box();
-        box.setProductBatch(productBatchRepository.findById(request.getProductBatchId())
-                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + request.getProductBatchId())));
-        box.setStatus(BoxStatus.GENERATED);
+        ProductBatch batch = productBatchRepository.findById(request.getProductBatchId())
+                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + request.getProductBatchId()));
+        box.setProductBatch(batch);
+        box.setStatus(GoodsStatus.GENERATED);
         return boxRepository.save(box);
     }
 

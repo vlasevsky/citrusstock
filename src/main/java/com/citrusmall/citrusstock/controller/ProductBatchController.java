@@ -2,6 +2,7 @@ package com.citrusmall.citrusstock.controller;
 
 import com.citrusmall.citrusstock.dto.BoxResponse;
 import com.citrusmall.citrusstock.dto.ProductBatchCreateRequest;
+import com.citrusmall.citrusstock.dto.ProductBatchFilterCriteria;
 import com.citrusmall.citrusstock.dto.ProductBatchResponse;
 import com.citrusmall.citrusstock.mapper.BoxMapper;
 import com.citrusmall.citrusstock.mapper.ProductBatchMapper;
@@ -10,6 +11,8 @@ import com.citrusmall.citrusstock.service.BoxService;
 import com.citrusmall.citrusstock.service.ProductBatchService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,9 +37,11 @@ public class ProductBatchController {
 
     @PostMapping
     public ResponseEntity<ProductBatchResponse> createProductBatch(@Valid @RequestBody ProductBatchCreateRequest request) {
+        // Преобразуем DTO в сущность
+        ProductBatch productBatch = productBatchMapper.toProductBatch(request);
         // Создаем партию
-        ProductBatch savedBatch = productBatchService.createProductBatch(request);
-        // Преобразуем в DTO для ответа
+        ProductBatch savedBatch = productBatchService.createProductBatch(productBatch);
+        // Преобразуем сущность в DTO для ответа
         ProductBatchResponse response = productBatchMapper.toProductBatchResponse(savedBatch);
         return ResponseEntity.ok(response);
     }
@@ -47,11 +52,19 @@ public class ProductBatchController {
         return ResponseEntity.ok(productBatchMapper.toProductBatchResponse(batch));
     }
 
+    /**
+     * Единый endpoint для получения партий с опциональными фильтрами и пагинацией.
+     * Если параметры фильтрации не переданы, возвращаются все записи.
+     *
+     * Пример запроса:
+     * GET /api/warehouse/product-batches?productId=1&status=REGISTERED&page=0&size=10&sort=receivedAt,desc
+     */
     @GetMapping
-    public ResponseEntity<List<ProductBatchResponse>> getAllProductBatches() {
-        List<ProductBatchResponse> responses = productBatchService.getAllProductBatches().stream()
-                .map(productBatchMapper::toProductBatchResponse)
-                .collect(Collectors.toList());
+    public ResponseEntity<Page<ProductBatchResponse>> getProductBatches(
+            @ModelAttribute ProductBatchFilterCriteria criteria,
+            Pageable pageable) {
+        Page<ProductBatch> batches = productBatchService.getFilteredProductBatches(criteria, pageable);
+        Page<ProductBatchResponse> responses = batches.map(productBatchMapper::toProductBatchResponse);
         return ResponseEntity.ok(responses);
     }
 

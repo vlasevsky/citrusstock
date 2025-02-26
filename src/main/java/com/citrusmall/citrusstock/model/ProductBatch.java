@@ -1,10 +1,8 @@
 package com.citrusmall.citrusstock.model;
-import com.citrusmall.citrusstock.model.enums.ProductBatchStatus;
-import com.citrusmall.citrusstock.model.enums.Zone;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import jakarta.persistence.*;
 import lombok.Data;
-
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,11 +28,11 @@ public class ProductBatch {
     private LocalDateTime receivedAt;
 
     @Enumerated(EnumType.STRING)
-    private ProductBatchStatus status = ProductBatchStatus.REGISTERED;
+    private GoodsStatus status;
 
-    // New field: Zone of the batch. Default is RECEIVING.
-    @Enumerated(EnumType.STRING)
-    private Zone zone = Zone.RECEIVING;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "zone_id")
+    private Zone zone;
 
     @OneToMany(mappedBy = "productBatch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Box> boxes;

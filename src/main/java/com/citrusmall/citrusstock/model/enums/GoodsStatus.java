@@ -1,6 +1,6 @@
 package com.citrusmall.citrusstock.model.enums;
 
-public enum BoxStatus {
+public enum GoodsStatus {
     GENERATED,
     STICKED,
     SCANNED,

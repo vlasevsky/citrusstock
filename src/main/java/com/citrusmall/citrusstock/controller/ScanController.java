@@ -33,13 +33,7 @@ public class ScanController {
                                           @RequestParam Long userId,
                                           @RequestParam ScanMode scanMode) {
         try {
-            if (scanMode == ScanMode.ON_WAREHOUSE) {
-                scanService.scanNewBox(boxId, userId);
-            } else if (scanMode == ScanMode.SHIPMENT) {
-                scanService.scanBoxForShipment(boxId, userId);
-            } else {
-                throw new IllegalArgumentException("Unsupported scan mode: " + scanMode);
-            }
+            scanService.scanBoxByMode(boxId, userId, scanMode);
             return ResponseEntity.ok("Box scanned successfully.");
         } catch (Exception e) {
             e.printStackTrace();

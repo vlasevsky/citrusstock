@@ -1,21 +1,20 @@
 package com.citrusmall.citrusstock.service;
 
-import com.citrusmall.citrusstock.dto.ProductBatchCreateRequest;
-import com.citrusmall.citrusstock.model.Box;
+import com.citrusmall.citrusstock.dto.ProductBatchFilterCriteria;
 import com.citrusmall.citrusstock.model.ProductBatch;
-import com.citrusmall.citrusstock.model.enums.BoxStatus;
-import com.citrusmall.citrusstock.model.enums.ProductBatchStatus;
-import com.citrusmall.citrusstock.model.enums.Zone;
-import com.citrusmall.citrusstock.repository.BoxRepository;
+import com.citrusmall.citrusstock.model.Zone;
+import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import com.citrusmall.citrusstock.repository.ProductBatchRepository;
 import com.citrusmall.citrusstock.repository.ProductRepository;
 import com.citrusmall.citrusstock.repository.SupplierRepository;
+import com.citrusmall.citrusstock.repository.ZoneRepository;
+import com.citrusmall.citrusstock.specification.ProductBatchSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class ProductBatchService {
@@ -24,58 +23,26 @@ public class ProductBatchService {
     private ProductBatchRepository productBatchRepository;
 
     @Autowired
-    private BoxRepository boxRepository;
-
-    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
     private SupplierRepository supplierRepository;
 
-    public ProductBatch createProductBatch(ProductBatchCreateRequest request) {
-        ProductBatch batch = new ProductBatch();
+    @Autowired
+    private ZoneRepository zoneRepository;
 
-        if (request.getProductId() != null) {
-            batch.setProduct(productRepository.findById(request.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found with id " + request.getProductId())));
-        } else {
-            batch.setProduct(null);
+    public ProductBatch createProductBatch(ProductBatch productBatch) {
+        if (productBatch.getReceivedAt() == null) {
+            productBatch.setReceivedAt(LocalDateTime.now());
         }
-
-        if (request.getSupplierId() != null) {
-            batch.setSupplier(supplierRepository.findById(request.getSupplierId())
-                    .orElseThrow(() -> new IllegalArgumentException("Supplier not found with id " + request.getSupplierId())));
-        } else {
-            batch.setSupplier(null);
+        // Если зона не задана, устанавливаем дефолтную "RECEIVING"
+        if (productBatch.getZone() == null) {
+            Zone defaultZone = zoneRepository.findByName("RECEIVING")
+                    .orElseThrow(() -> new IllegalStateException("Default zone 'RECEIVING' not found"));
+            productBatch.setZone(defaultZone);
         }
-
-        batch.setReceivedAt(request.getReceivedAt() != null ? request.getReceivedAt() : LocalDateTime.now());
-        batch.setStatus(ProductBatchStatus.REGISTERED);
-        batch.setZone(Zone.RECEIVING);
-
-        // Сохраняем партию
-        ProductBatch savedBatch = productBatchRepository.save(batch);
-
-        // Генерируем коробки в количестве, указанном в DTO (если не указано, по умолчанию 1)
-        int totalBoxes = (request.getTotalBoxes() == null || request.getTotalBoxes() < 1) ? 1 : request.getTotalBoxes();
-        List<Box> boxes = new ArrayList<>();
-        for (int i = 0; i < totalBoxes; i++) {
-            Box box = new Box();
-            box.setProductBatch(savedBatch);
-            box.setStatus(BoxStatus.GENERATED);
-            boxes.add(box);
-        }
-        boxRepository.saveAll(boxes);
-        savedBatch.setBoxes(boxes);
-        return savedBatch;
-    }
-
-    public void updateBatchStatus(Long batchId, ProductBatchStatus newStatus, Zone newZone) {
-        ProductBatch batch = productBatchRepository.findById(batchId)
-                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + batchId));
-        batch.setStatus(newStatus);
-        batch.setZone(newZone);
-        productBatchRepository.save(batch);
+        productBatch.setStatus(GoodsStatus.GENERATED);
+        return productBatchRepository.save(productBatch);
     }
 
     public ProductBatch getProductBatchById(Long id) {
@@ -83,8 +50,10 @@ public class ProductBatchService {
                 .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + id));
     }
 
-    public List<ProductBatch> getAllProductBatches() {
-        return productBatchRepository.findAll();
+
+    public Page<ProductBatch> getFilteredProductBatches(ProductBatchFilterCriteria criteria, Pageable pageable) {
+        ProductBatchSpecification spec = new ProductBatchSpecification(criteria);
+        return productBatchRepository.findAll(spec, pageable);
     }
 
     public ProductBatch updateProductBatch(Long id, ProductBatch productBatchDetails) {
@@ -101,5 +70,11 @@ public class ProductBatchService {
         productBatchRepository.deleteById(id);
     }
 
-
+    public void updateBatchStatus(Long batchId, GoodsStatus newStatus, Zone newZone) {
+        ProductBatch batch = productBatchRepository.findById(batchId)
+                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + batchId));
+        batch.setStatus(newStatus);
+        batch.setZone(newZone);
+        productBatchRepository.save(batch);
+    }
 }

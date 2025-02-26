@@ -1,8 +1,7 @@
 package com.citrusmall.citrusstock.model;
 
 
-import com.citrusmall.citrusstock.model.enums.BoxStatus;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -26,7 +25,7 @@ public class Box {
     private ProductBatch productBatch;
 
     @Enumerated(EnumType.STRING)
-    private BoxStatus status;
+    private GoodsStatus status;
 
     private LocalDateTime scannedAt;
 

@@ -1,16 +1,12 @@
 package com.citrusmall.citrusstock.service;
 
-import com.citrusmall.citrusstock.model.Box;
-import com.citrusmall.citrusstock.model.ProductBatch;
-import com.citrusmall.citrusstock.model.ScanEvent;
-import com.citrusmall.citrusstock.model.User;
-import com.citrusmall.citrusstock.model.enums.BoxStatus;
-import com.citrusmall.citrusstock.model.enums.ProductBatchStatus;
+import com.citrusmall.citrusstock.model.*;
+import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import com.citrusmall.citrusstock.model.enums.ScanMode;
-import com.citrusmall.citrusstock.model.enums.Zone;
 import com.citrusmall.citrusstock.repository.BoxRepository;
 import com.citrusmall.citrusstock.repository.ScanEventRepository;
 import com.citrusmall.citrusstock.repository.UserRepository;
+import com.citrusmall.citrusstock.repository.ZoneRepository;
 import com.citrusmall.citrusstock.util.QRCodeContentBuilder;
 import com.citrusmall.citrusstock.util.codegen.CodeGeneratorFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +35,9 @@ public class ScanService {
     private ProductBatchService productBatchService;
 
     @Autowired
+    private ZoneRepository zoneRepository;
+
+    @Autowired
     private CodeGeneratorFactory codeGeneratorFactory;
 
     /**
@@ -60,6 +59,17 @@ public class ScanService {
         }
     }
 
+    public void scanBoxByMode(Long boxId, Long userId, ScanMode scanMode) throws Exception {
+        if (scanMode == ScanMode.ON_WAREHOUSE) {
+            scanNewBox(boxId, userId);
+        } else if (scanMode == ScanMode.SHIPMENT) {
+            scanBoxForShipment(boxId, userId);
+        } else {
+            throw new IllegalArgumentException("Unsupported scan mode: " + scanMode);
+        }
+    }
+
+
     /**
      * Универсальный метод сканирования коробки.
      * Обновляет статус коробки, генерирует QR-код (если ещё не сгенерирован),
@@ -68,19 +78,17 @@ public class ScanService {
      *
      * @param boxId           ID сканируемой коробки
      * @param userId          ID оператора, выполнившего сканирование
-     * @param targetZone      новая зона партии (STORAGE для новых товаров, SHIPMENT для отгрузки)
+     * @param targetZoneName      новая зона партии (STORAGE для новых товаров, SHIPMENT для отгрузки)
      * @param newBatchStatus  новый статус партии (CONFIRMED для новых товаров, SHIPPED для отгрузки)
      * @param newBoxStatus    новый статус коробки (SCANNED для новых товаров, SHIPPED для отгрузки)
      * @throws Exception      в случае ошибки генерации QR-кода или сохранения данных
      */
-    public void scanBox(Long boxId, Long userId, Zone targetZone, ProductBatchStatus newBatchStatus, BoxStatus newBoxStatus) throws Exception {
+    public void scanBox(Long boxId, Long userId, String targetZoneName, GoodsStatus newBatchStatus, GoodsStatus newBoxStatus) throws Exception {
         Box box = boxRepository.findById(boxId)
                 .orElseThrow(() -> new IllegalArgumentException("Box with id " + boxId + " not found"));
 
-        // Если QR-код ещё не сгенерирован, генерируем и сохраняем его
         generateAndStoreQRCodeIfNeeded(box);
 
-        // Обновляем статус коробки и время сканирования
         box.setStatus(newBoxStatus);
         box.setScannedAt(LocalDateTime.now());
         User user = userRepository.findById(userId)
@@ -88,10 +96,8 @@ public class ScanService {
         box.setScannedBy(user);
         boxRepository.save(box);
 
-        // Определяем режим сканирования
-        ScanMode mode = (targetZone == Zone.SHIPMENT) ? ScanMode.SHIPMENT : ScanMode.ON_WAREHOUSE;
+        ScanMode mode = targetZoneName.equalsIgnoreCase("SHIPMENT") ? ScanMode.SHIPMENT : ScanMode.ON_WAREHOUSE;
 
-        // Создаём событие сканирования
         ScanEvent event = new ScanEvent();
         event.setBox(box);
         event.setUser(user);
@@ -99,11 +105,12 @@ public class ScanService {
         event.setScanTime(LocalDateTime.now());
         scanEventRepository.save(event);
 
-        // Проверяем, что все коробки партии имеют нужный статус, и обновляем статус и зону партии
         ProductBatch batch = box.getProductBatch();
         List<Box> boxes = boxRepository.findByProductBatch_Id(batch.getId());
         boolean allMatch = boxes.stream().allMatch(b -> b.getStatus() == newBoxStatus);
         if (allMatch) {
+            Zone targetZone = zoneRepository.findByName(targetZoneName)
+                    .orElseThrow(() -> new IllegalStateException("Zone '" + targetZoneName + "' not found"));
             productBatchService.updateBatchStatus(batch.getId(), newBatchStatus, targetZone);
         }
     }
@@ -113,14 +120,14 @@ public class ScanService {
      * При сканировании новых товаров устанавливаем:
      *  - Статус коробки: SCANNED
      *  - Статус партии: CONFIRMED
-     *  - Зона партии: STORAGE
      *
      * @param boxId  ID коробки
      * @param userId ID оператора
      * @throws Exception
      */
     public void scanNewBox(Long boxId, Long userId) throws Exception {
-        scanBox(boxId, userId, Zone.STORAGE, ProductBatchStatus.CONFIRMED, BoxStatus.SCANNED);
+        // Для новых товаров используем default зону "RECEIVING"
+        scanBox(boxId, userId, "RECEIVING", GoodsStatus.SCANNED, GoodsStatus.SCANNED);
     }
 
     /**
@@ -135,6 +142,7 @@ public class ScanService {
      * @throws Exception
      */
     public void scanBoxForShipment(Long boxId, Long userId) throws Exception {
-        scanBox(boxId, userId, Zone.SHIPMENT, ProductBatchStatus.SHIPPED, BoxStatus.SHIPPED);
+        // Для отгрузки используем default зону "SHIPMENT"
+        scanBox(boxId, userId, "SHIPMENT", GoodsStatus.SHIPPED, GoodsStatus.SHIPPED);
     }
 }
