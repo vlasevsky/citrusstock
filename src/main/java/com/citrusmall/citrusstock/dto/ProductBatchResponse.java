@@ -12,6 +12,6 @@ public class ProductBatchResponse {
     private Long supplierId;
     private LocalDateTime receivedAt;
     private String status;
-    private String zone;
+    private Long zone;
     private List<BoxResponse> boxes;
 }
