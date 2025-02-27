@@ -1,13 +1,9 @@
 package com.citrusmall.citrusstock.service;
 
 import com.citrusmall.citrusstock.dto.ProductBatchFilterCriteria;
-import com.citrusmall.citrusstock.model.ProductBatch;
-import com.citrusmall.citrusstock.model.Zone;
+import com.citrusmall.citrusstock.model.*;
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
-import com.citrusmall.citrusstock.repository.ProductBatchRepository;
-import com.citrusmall.citrusstock.repository.ProductRepository;
-import com.citrusmall.citrusstock.repository.SupplierRepository;
-import com.citrusmall.citrusstock.repository.ZoneRepository;
+import com.citrusmall.citrusstock.repository.*;
 import com.citrusmall.citrusstock.specification.ProductBatchSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,6 +11,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class ProductBatchService {
@@ -31,20 +29,48 @@ public class ProductBatchService {
     @Autowired
     private ZoneRepository zoneRepository;
 
-    public ProductBatch createProductBatch(ProductBatch productBatch) {
+    @Autowired
+    private BoxRepository boxRepository;
+
+    public ProductBatch createProductBatch(ProductBatch productBatch, Long productId, Long supplierId, Integer totalBoxes) {
+        if (productId != null) {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found with id " + productId));
+            productBatch.setProduct(product);
+        }
+        if (supplierId != null) {
+            Supplier supplier = supplierRepository.findById(supplierId)
+                    .orElseThrow(() -> new IllegalArgumentException("Supplier not found with id " + supplierId));
+            productBatch.setSupplier(supplier);
+        }
         if (productBatch.getReceivedAt() == null) {
             productBatch.setReceivedAt(LocalDateTime.now());
         }
-        // Если зона не задана, устанавливаем дефолтную "RECEIVING"
+        // Если зона не задана, устанавливаем дефолтную зону "RECEIVING"
         if (productBatch.getZone() == null) {
             Zone defaultZone = zoneRepository.findByName("RECEIVING")
                     .orElseThrow(() -> new IllegalStateException("Default zone 'RECEIVING' not found"));
             productBatch.setZone(defaultZone);
         }
         productBatch.setStatus(GoodsStatus.GENERATED);
-        return productBatchRepository.save(productBatch);
-    }
+        // Сохраняем партию
+        ProductBatch savedBatch = productBatchRepository.save(productBatch);
+        // Если указано количество коробок, создаём их
+        if (totalBoxes != null && totalBoxes > 0) {
+            List<Box> boxes = new ArrayList<>();
+            for (int i = 0; i < totalBoxes; i++) {
+                Box box = new Box();
+                box.setProductBatch(savedBatch);
+                box.setStatus(GoodsStatus.GENERATED);
+                boxes.add(box);
+            }
+            boxRepository.saveAll(boxes);
+            savedBatch.setBoxes(boxes);
+            savedBatch = productBatchRepository.save(savedBatch);
+        }
+        return savedBatch;
 
+    }
     public ProductBatch getProductBatchById(Long id) {
         return productBatchRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + id));

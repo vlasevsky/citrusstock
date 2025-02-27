@@ -39,9 +39,9 @@ public class ProductBatchController {
     public ResponseEntity<ProductBatchResponse> createProductBatch(@Valid @RequestBody ProductBatchCreateRequest request) {
         // Преобразуем DTO в сущность
         ProductBatch productBatch = productBatchMapper.toProductBatch(request);
-        // Создаем партию
-        ProductBatch savedBatch = productBatchService.createProductBatch(productBatch);
-        // Преобразуем сущность в DTO для ответа
+        // Создаем партию, передавая productId, supplierId и totalBoxes из запроса
+        ProductBatch savedBatch = productBatchService.createProductBatch(productBatch, request.getProductId(), request.getSupplierId(), request.getTotalBoxes());
+        // Преобразуем сохраненную сущность в DTO для ответа
         ProductBatchResponse response = productBatchMapper.toProductBatchResponse(savedBatch);
         return ResponseEntity.ok(response);
     }
