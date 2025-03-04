@@ -8,10 +8,10 @@ import java.util.List;
 @Data
 public class ProductBatchResponse {
     private Long id;
-    private Long productId;
-    private Long supplierId;
+    private ProductResponse product;
+    private SupplierResponse supplier;
     private LocalDateTime receivedAt;
     private String status;
-    private Long zone;
+    private ZoneResponse zone;
     private List<BoxResponse> boxes;
 }
