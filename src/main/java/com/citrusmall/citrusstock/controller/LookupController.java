@@ -2,6 +2,7 @@ package com.citrusmall.citrusstock.controller;
 
 
 import com.citrusmall.citrusstock.model.enums.*;
+import com.citrusmall.citrusstock.util.EnumLocalizer;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,11 +16,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/lookups")
 public class LookupController {
 
-    @GetMapping("/good -status")
+    @GetMapping("/good-status")
     public ResponseEntity<List<String>> getBoxStatuses() {
         List<String> statuses = Arrays.stream(GoodsStatus.values())
-                .map(Enum::name)
-
+                .map(EnumLocalizer::localizeGoodsStatus)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(statuses);
     }
@@ -29,7 +29,7 @@ public class LookupController {
     @GetMapping("/scan-mode")
     public ResponseEntity<List<String>> getScanModes() {
         List<String> modes = Arrays.stream(ScanMode.values())
-                .map(Enum::name)
+                .map(EnumLocalizer::localizeScanMode)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(modes);
     }

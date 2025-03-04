@@ -1,5 +1,6 @@
 package com.citrusmall.citrusstock.service;
 
+import com.citrusmall.citrusstock.dto.ProductBatchCreateRequest;
 import com.citrusmall.citrusstock.dto.ProductBatchFilterCriteria;
 import com.citrusmall.citrusstock.model.*;
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
@@ -82,13 +83,30 @@ public class ProductBatchService {
         return productBatchRepository.findAll(spec, pageable);
     }
 
-    public ProductBatch updateProductBatch(Long id, ProductBatch productBatchDetails) {
-        ProductBatch batch = getProductBatchById(id);
-        batch.setReceivedAt(productBatchDetails.getReceivedAt());
-        batch.setStatus(productBatchDetails.getStatus());
-        batch.setZone(productBatchDetails.getZone());
-        batch.setProduct(productBatchDetails.getProduct());
-        batch.setSupplier(productBatchDetails.getSupplier());
+    public ProductBatch updateProductBatch(Long id, ProductBatchCreateRequest request) {
+        ProductBatch batch = productBatchRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + id));
+
+        // Обновляем время получения, если передано
+        if (request.getReceivedAt() != null) {
+            batch.setReceivedAt(request.getReceivedAt());
+        } else {
+            batch.setReceivedAt(LocalDateTime.now());
+        }
+
+        // Обновляем продукт, если указан productId
+        if (request.getProductId() != null) {
+            Product product = productRepository.findById(request.getProductId())
+                    .orElseThrow(() -> new IllegalArgumentException("Product not found with id " + request.getProductId()));
+            batch.setProduct(product);
+        }
+
+        // Обновляем поставщика, если указан supplierId
+        if (request.getSupplierId() != null) {
+            Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new IllegalArgumentException("Supplier not found with id " + request.getSupplierId()));
+            batch.setSupplier(supplier);
+        }
         return productBatchRepository.save(batch);
     }
 
