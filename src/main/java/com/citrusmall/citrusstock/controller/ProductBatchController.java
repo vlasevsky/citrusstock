@@ -72,7 +72,7 @@ public class ProductBatchController {
     public ResponseEntity<ProductBatchResponse> updateProductBatch(@PathVariable Long id, @Valid @RequestBody ProductBatchCreateRequest request) {
         // todo нужно другое dto, я думаю (на будущее)
         ProductBatch batch = productBatchMapper.toProductBatch(request);
-        ProductBatch updatedBatch = productBatchService.updateProductBatch(id, batch);
+        ProductBatch updatedBatch = productBatchService.updateProductBatch(id,request);
         return ResponseEntity.ok(productBatchMapper.toProductBatchResponse(updatedBatch));
     }
 
