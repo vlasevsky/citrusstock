@@ -1,0 +1,30 @@
+name: Deploy to Server on dev push
+
+on:
+  push:
+    branches: [ dev ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout backend repository
+        uses: actions/checkout@v3
+        with:
+          path: backend
+
+      - name: Checkout frontend repository
+        uses: actions/checkout@v3
+        with:
+          repository: funkjus/stockui
+          path: frontend
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /opt/warehouse-deploy
+            ./deploy.sh
