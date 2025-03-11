@@ -21,7 +21,7 @@ jobs:
         with:
           repository: funkjus/stockui
           path: frontend
-          ref: development
+          ref: develop
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.6
