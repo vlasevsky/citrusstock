@@ -1,23 +1,27 @@
-name: Deploy to Server on dev push
+name: Deploy to Server
 
 on:
   push:
-    branches: [ dev, develop ]
+    branches:
+      - dev         # Для backend
+      - development # Для frontend
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout backend repository
+      - name: Checkout backend repo
         uses: actions/checkout@v3
         with:
           path: backend
+          ref: dev
 
-      - name: Checkout frontend repository
+      - name: Checkout frontend repo
         uses: actions/checkout@v3
         with:
           repository: funkjus/stockui
           path: frontend
+          ref: development
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v0.1.6
