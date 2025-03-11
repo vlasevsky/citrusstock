@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - dev         # Для backend
-      - development # Для frontend
+      - develop # Для frontend
 
 jobs:
   deploy:
