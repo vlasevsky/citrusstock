@@ -4,6 +4,7 @@ package com.citrusmall.citrusstock.model;
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "boxes")
 @Data
+@ToString(exclude = {"productBatch", "scannedBy"})
 public class Box {
 
     @Id

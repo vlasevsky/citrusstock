@@ -89,4 +89,42 @@ public class ProductBatchController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * Получает список партий, у которых коробки имеют разные статусы.
+     * Помогает выявить проблемные партии, требующие внимания пользователя.
+     *
+     * @return Список партий с коробками в разных статусах
+     */
+    @GetMapping("/mixed-status")
+    public ResponseEntity<List<ProductBatchResponse>> getBatchesWithMixedBoxStatuses() {
+        List<ProductBatch> batches = productBatchService.findBatchesWithMixedBoxStatuses();
+        List<ProductBatchResponse> responses = batches.stream()
+                .map(productBatchMapper::toProductBatchResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+    
+    /**
+     * Получает статистику распределения коробок по статусам для указанной партии.
+     * Показывает, сколько коробок находится в каждом статусе.
+     *
+     * @param batchId ID партии
+     * @return Карта со статистикой: ключ - название статуса, значение - количество коробок
+     */
+    @GetMapping("/{batchId}/box-status-statistics")
+    public ResponseEntity<java.util.Map<String, Long>> getBoxStatusStatistics(@PathVariable Long batchId) {
+        // Получаем статистику в виде Map<GoodsStatus, Long>
+        java.util.Map<com.citrusmall.citrusstock.model.enums.GoodsStatus, Long> statistics = 
+                productBatchService.getBoxStatusStatisticsForBatch(batchId);
+        
+        // Преобразуем ключи из GoodsStatus в строки для удобства клиента
+        java.util.Map<String, Long> response = statistics.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        entry -> entry.getKey().name(),  // GoodsStatus -> String
+                        java.util.Map.Entry::getValue    // количество коробок
+                ));
+        
+        return ResponseEntity.ok(response);
+    }
 }

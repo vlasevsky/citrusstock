@@ -121,4 +121,113 @@ public class ProductBatchService {
         batch.setZone(newZone);
         productBatchRepository.save(batch);
     }
+    
+    /**
+     * Обновляет статус партии на основе статусов всех её коробок.
+     * Реализует бизнес-правила:
+     * 1. Если все коробки имеют статус SCANNED, устанавливает партии статус SCANNED
+     * 2. Если все коробки имеют статус SHIPPED, устанавливает партии статус SHIPPED
+     * 3. В других случаях (коробки в разных статусах), статус партии не меняется
+     *
+     * @param batchId    ID партии для обновления
+     * @param targetZone Целевая зона для партии при обновлении статуса
+     * @throws IllegalArgumentException если партия не найдена
+     */
+    public void updateBatchStatusBasedOnBoxes(Long batchId, Zone targetZone) {
+        // Находим партию и все связанные с ней коробки
+        ProductBatch batch = productBatchRepository.findById(batchId)
+                .orElseThrow(() -> new IllegalArgumentException("ProductBatch not found with id " + batchId));
+        
+        List<Box> boxes = boxRepository.findByProductBatch_Id(batchId);
+        
+        // Если коробок нет, статус партии не меняем
+        if (boxes.isEmpty()) {
+            return;
+        }
+        
+        // Проверяем, все ли коробки имеют одинаковый статус
+        boolean allBoxesScanned = boxes.stream().allMatch(box -> box.getStatus() == GoodsStatus.SCANNED);
+        boolean allBoxesShipped = boxes.stream().allMatch(box -> box.getStatus() == GoodsStatus.SHIPPED);
+        
+        // Применяем бизнес-правила обновления статуса партии
+        if (allBoxesScanned) {
+            updateBatchStatusAndZone(batch, GoodsStatus.SCANNED, targetZone);
+        } else if (allBoxesShipped) {
+            updateBatchStatusAndZone(batch, GoodsStatus.SHIPPED, targetZone);
+        }
+        // Если у коробок разные статусы, оставляем текущий статус партии
+    }
+    
+    /**
+     * Обновляет статус и зону партии и сохраняет изменения.
+     * 
+     * @param batch     Партия для обновления
+     * @param newStatus Новый статус партии
+     * @param newZone   Новая зона партии
+     */
+    private void updateBatchStatusAndZone(ProductBatch batch, GoodsStatus newStatus, Zone newZone) {
+        batch.setStatus(newStatus);
+        batch.setZone(newZone);
+        productBatchRepository.save(batch);
+    }
+    
+    /**
+     * Находит все партии, у которых коробки имеют разные статусы.
+     * Позволяет выявить проблемные партии, требующие внимания.
+     *
+     * @return Список партий с коробками в разных статусах
+     */
+    public List<ProductBatch> findBatchesWithMixedBoxStatuses() {
+        List<ProductBatch> result = new ArrayList<>();
+        
+        // Получаем все партии
+        List<ProductBatch> allBatches = productBatchRepository.findAll();
+        
+        // Проверяем каждую партию
+        for (ProductBatch batch : allBatches) {
+            if (hasMixedBoxStatuses(batch.getId())) {
+                result.add(batch);
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * Проверяет, имеет ли партия коробки в разных статусах.
+     *
+     * @param batchId ID партии для проверки
+     * @return true, если коробки имеют разные статусы, иначе false
+     */
+    private boolean hasMixedBoxStatuses(Long batchId) {
+        List<Box> boxes = boxRepository.findByProductBatch_Id(batchId);
+        
+        // Если коробок нет или одна, статусы не могут быть разными
+        if (boxes.size() <= 1) {
+            return false;
+        }
+        
+        // Берем статус первой коробки как эталон
+        GoodsStatus firstStatus = boxes.get(0).getStatus();
+        
+        // Проверяем, все ли коробки имеют такой же статус
+        return boxes.stream().anyMatch(box -> box.getStatus() != firstStatus);
+    }
+    
+    /**
+     * Возвращает статистику распределения коробок партии по статусам.
+     *
+     * @param batchId ID партии
+     * @return Карта, где ключ - статус, значение - количество коробок
+     */
+    public java.util.Map<GoodsStatus, Long> getBoxStatusStatisticsForBatch(Long batchId) {
+        List<Box> boxes = boxRepository.findByProductBatch_Id(batchId);
+        
+        // Группируем коробки по статусу и подсчитываем количество в каждом статусе
+        return boxes.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        Box::getStatus,
+                        java.util.stream.Collectors.counting()
+                ));
+    }
 }
