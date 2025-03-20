@@ -65,6 +65,7 @@ public class ProductBatchController {
             Pageable pageable) {
         Page<ProductBatch> batches = productBatchService.getFilteredProductBatches(criteria, pageable);
         Page<ProductBatchResponse> responses = batches.map(productBatchMapper::toProductBatchResponse);
+        System.out.println();
         return ResponseEntity.ok(responses);
     }
 
