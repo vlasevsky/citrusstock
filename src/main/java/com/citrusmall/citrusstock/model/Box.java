@@ -1,13 +1,12 @@
 package com.citrusmall.citrusstock.model;
 
-
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
-
+import java.util.List;
 
 @Entity
 @Table(name = "boxes")
@@ -34,4 +33,7 @@ public class Box {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scanned_by")
     private User scannedBy;
+
+    @OneToMany(mappedBy = "box", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ScanEvent> scanEvents;
 }
