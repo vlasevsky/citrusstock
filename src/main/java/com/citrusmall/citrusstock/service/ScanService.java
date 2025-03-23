@@ -51,10 +51,8 @@ public class ScanService {
     private void generateAndStoreQRCodeIfNeeded(Box box) throws Exception {
         if (box.getCode() == null || box.getCode().isEmpty()) {
             String qrContent = QRCodeContentBuilder.buildContent(box);
-            BufferedImage qrImage = codeGeneratorFactory.getGenerator("QR").generateCodeImage(qrContent, 200, 200);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(qrImage, "png", baos);
-            String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
+            byte[] qrImageBytes = codeGeneratorFactory.getGenerator("QR").generateCodeImage(qrContent, 200, 200);
+            String base64Image = Base64.getEncoder().encodeToString(qrImageBytes);
             box.setCode(base64Image);
         }
     }

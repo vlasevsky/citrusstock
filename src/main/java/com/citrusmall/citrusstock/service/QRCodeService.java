@@ -1,6 +1,5 @@
 package com.citrusmall.citrusstock.service;
 
-
 import com.citrusmall.citrusstock.model.Box;
 import com.citrusmall.citrusstock.model.Product;
 import com.citrusmall.citrusstock.model.ProductBatch;
@@ -9,20 +8,16 @@ import com.citrusmall.citrusstock.util.QRCodeContentBuilder;
 import com.citrusmall.citrusstock.util.codegen.CodeGenerator;
 import com.citrusmall.citrusstock.util.codegen.CodeGeneratorFactory;
 import com.citrusmall.citrusstock.util.codegen.QRCodeWithTextUtil;
+import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -38,10 +33,10 @@ public class QRCodeService {
 
     /**
      * Generates a QR code with product name text for a specific box,
-     * saves it to disk, and returns the image as a byte array (PNG).
+     * saves it to disk, and returns the image as a byte array (PDF).
      *
      * @param boxId the identifier of the box
-     * @return a byte array containing the PNG image
+     * @return a byte array containing the PDF file
      * @throws Exception if the box is not found or an error occurs during generation/storage
      */
     public byte[] generateAndStoreQRCodeWithTextForBox(Long boxId) throws Exception {
@@ -50,11 +45,11 @@ public class QRCodeService {
 
         String qrContent = QRCodeContentBuilder.buildContent(box);
         CodeGenerator generator = codeGeneratorFactory.getGenerator("QR");
-        BufferedImage qrImage = generator.generateCodeImage(qrContent, 200, 200);
+        byte[] qrImageBytes = generator.generateCodeImage(qrContent, 200, 200);
         String productName = box.getProductBatch().getProduct().getName();
-        byte[] imageBytes = QRCodeWithTextUtil.addTextBelowQRCode(qrImage, productName);
+        byte[] pdfBytes = QRCodeWithTextUtil.addTextBelowQRCode(qrImageBytes, productName);
 
-        // Save the file under "qr/codes/product_{productId}/qr_box_{boxId}.png"
+        // Save the file under "qr/codes/product_{productId}/qr_box_{boxId}.pdf"
         ProductBatch batch = box.getProductBatch();
         Product product = batch.getProduct();
         String productFolderName = "product_" + product.getId();
@@ -63,11 +58,11 @@ public class QRCodeService {
         if (!Files.exists(productFolder)) {
             Files.createDirectories(productFolder);
         }
-        String filename = "qr_box_" + box.getId() + ".png";
+        String filename = "qr_box_" + box.getId() + ".pdf";
         Path filePath = productFolder.resolve(filename);
-        Files.write(filePath, imageBytes);
+        Files.write(filePath, pdfBytes);
 
-        return imageBytes;
+        return pdfBytes;
     }
 
     /**
@@ -83,32 +78,32 @@ public class QRCodeService {
         if (boxes.isEmpty()) {
             throw new IllegalArgumentException("No boxes found for product batch id " + batchId);
         }
-        PDDocument document = new PDDocument();
-        for (Box box : boxes) {
-            byte[] qrImageBytes = generateAndStoreQRCodeWithTextForBox(box.getId());
-            PDPage page = new PDPage();
-            document.addPage(page);
-            PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, qrImageBytes, "qr_box_" + box.getId() + ".png");
 
-            float pageWidth = page.getMediaBox().getWidth();
-            float pageHeight = page.getMediaBox().getHeight();
-            float desiredWidth = 300;
-            float desiredHeight = 300;
-            float x = (pageWidth - desiredWidth) / 2;
-            float y = (pageHeight - desiredHeight) / 2;
-
-            PDPageContentStream contentStream = new PDPageContentStream(document, page);
-            contentStream.drawImage(pdImage, x, y, desiredWidth, desiredHeight);
-            contentStream.close();
-        }
+        PDFMergerUtility merger = new PDFMergerUtility();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        document.save(baos);
-        document.close();
-        return baos.toByteArray();
+
+        try {
+            // Создаем временный документ для первого PDF
+            byte[] firstPdfBytes = generateAndStoreQRCodeWithTextForBox(boxes.get(0).getId());
+            merger.addSource(new ByteArrayInputStream(firstPdfBytes));
+
+            // Добавляем остальные PDF-документы
+            for (int i = 1; i < boxes.size(); i++) {
+                byte[] pdfBytes = generateAndStoreQRCodeWithTextForBox(boxes.get(i).getId());
+                merger.addSource(new ByteArrayInputStream(pdfBytes));
+            }
+
+            // Объединяем все PDF-документы
+            merger.setDestinationStream(baos);
+            merger.mergeDocuments(null);
+            return baos.toByteArray();
+        } finally {
+            baos.close();
+        }
     }
 
     /**
-     * Generates a ZIP archive containing PNG files of QR codes for all boxes
+     * Generates a ZIP archive containing PDF files of QR codes for all boxes
      * in the given product batch.
      *
      * @param batchId the identifier of the ProductBatch
@@ -123,10 +118,10 @@ public class QRCodeService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             for (Box box : boxes) {
-                byte[] imageBytes = generateAndStoreQRCodeWithTextForBox(box.getId());
-                String fileName = "qr_box_" + box.getId() + ".png";
+                byte[] pdfBytes = generateAndStoreQRCodeWithTextForBox(box.getId());
+                String fileName = "qr_box_" + box.getId() + ".pdf";
                 zos.putNextEntry(new ZipEntry(fileName));
-                zos.write(imageBytes);
+                zos.write(pdfBytes);
                 zos.closeEntry();
             }
         }
@@ -135,7 +130,7 @@ public class QRCodeService {
 
     /**
      * Helper method to get the ID of the first box in the given product batch.
-     * Used for returning a single PNG output.
+     * Used for returning a single PDF output.
      *
      * @param batchId the identifier of the ProductBatch
      * @return the ID of the first box

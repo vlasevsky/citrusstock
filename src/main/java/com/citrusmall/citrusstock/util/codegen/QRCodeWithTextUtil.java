@@ -1,50 +1,47 @@
 package com.citrusmall.citrusstock.util.codegen;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+
 import java.io.ByteArrayOutputStream;
 
 public class QRCodeWithTextUtil {
 
-    public static byte[] addTextBelowQRCode(BufferedImage qrImage, String text) throws Exception {
-        int qrWidth = qrImage.getWidth();
-        int qrHeight = qrImage.getHeight();
-        int textAreaHeight = 60; // Increased height for text visibility
+    public static byte[] addTextBelowQRCode(byte[] qrImageBytes, String text) throws Exception {
+        PDDocument document = new PDDocument();
+        PDPage page = new PDPage(new PDRectangle(300, 360)); // 300x300 for QR + 60 for text
+        document.addPage(page);
 
-        int combinedHeight = qrHeight + textAreaHeight;
-        BufferedImage combined = new BufferedImage(qrWidth, combinedHeight, BufferedImage.TYPE_INT_ARGB);
+        // Add QR code
+        PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, qrImageBytes, "qr_code");
+        PDPageContentStream contentStream = new PDPageContentStream(document, page);
+        
+        // Draw QR code at the top
+        contentStream.drawImage(pdImage, 50, 60, 200, 200);
 
-        Graphics2D g = combined.createGraphics();
-        // Enable anti-aliasing for smooth text rendering
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // Add text below QR code
+        contentStream.beginText();
+        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 16);
+        contentStream.newLineAtOffset(50, 40);
+        
+        // Center the text
+        float textWidth = PDType1Font.HELVETICA_BOLD.getStringWidth(text) / 1000 * 16;
+        float pageWidth = page.getMediaBox().getWidth();
+        float xOffset = (pageWidth - textWidth) / 2;
+        contentStream.newLineAtOffset(xOffset, 0);
+        
+        contentStream.showText(text);
+        contentStream.endText();
+        contentStream.close();
 
-        // Fill background with white color
-        g.setColor(Color.WHITE);
-        g.fillRect(0, 0, qrWidth, combinedHeight);
-
-        // Draw the QR code at the top
-        g.drawImage(qrImage, 0, 0, null);
-
-        // Set up the font and text color
-        Font font = new Font("Arial", Font.BOLD, 16);
-        g.setFont(font);
-        g.setColor(Color.BLACK);
-        FontMetrics fm = g.getFontMetrics();
-
-        // Calculate coordinates to center the text horizontally
-        int textWidth = fm.stringWidth(text);
-        int x = (qrWidth - textWidth) / 2;
-        int y = qrHeight + ((textAreaHeight - fm.getHeight()) / 2) + fm.getAscent();
-
-        // Draw the text
-        g.drawString(text, x, y);
-        g.dispose();
-
-        // Convert combined image to byte array in PNG format
+        // Save to byte array
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(combined, "png", baos);
+        document.save(baos);
+        document.close();
         return baos.toByteArray();
     }
 }
