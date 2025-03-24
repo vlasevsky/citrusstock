@@ -23,12 +23,49 @@ public class QrOutputService {
         QrOutputStrategy strategy = strategyFactory.getStrategy(format);
         return strategy.generateOutput(batchId);
     }
+    
+    /**
+     * Generates output for the given box in the specified format.
+     *
+     * @param boxId the identifier of the Box
+     * @param format  the desired format ("pdf" or "png")
+     * @return a byte array containing the output
+     * @throws Exception if an error occurs during generation
+     */
+    public byte[] generateOutputForBox(Long boxId, String format) throws Exception {
+        QrOutputStrategy strategy = strategyFactory.getStrategy(format);
+        return strategy.generateOutputForBox(boxId);
+    }
 
+    /**
+     * Returns the MIME type for the specified format.
+     *
+     * @param format the desired format
+     * @return the MIME type
+     */
     public String getContentType(String format) {
         return strategyFactory.getStrategy(format).getContentType();
     }
 
+    /**
+     * Returns the Content-Disposition header for the batch output.
+     *
+     * @param batchId the identifier of the ProductBatch
+     * @param format the desired format
+     * @return the Content-Disposition header value
+     */
     public String getContentDisposition(Long batchId, String format) {
         return strategyFactory.getStrategy(format).getContentDisposition(batchId);
+    }
+    
+    /**
+     * Returns the Content-Disposition header for the box output.
+     *
+     * @param boxId the identifier of the Box
+     * @param format the desired format
+     * @return the Content-Disposition header value
+     */
+    public String getContentDispositionForBox(Long boxId, String format) {
+        return strategyFactory.getStrategy(format).getContentDispositionForBox(boxId);
     }
 }

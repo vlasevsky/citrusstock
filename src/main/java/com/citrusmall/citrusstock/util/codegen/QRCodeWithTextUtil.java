@@ -7,41 +7,64 @@ import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public class QRCodeWithTextUtil {
 
     public static byte[] addTextBelowQRCode(byte[] qrImageBytes, String text) throws Exception {
+        // Создаем документ PDF
         PDDocument document = new PDDocument();
-        PDPage page = new PDPage(new PDRectangle(300, 360)); // 300x300 for QR + 60 for text
-        document.addPage(page);
-
-        // Add QR code
-        PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, qrImageBytes, "qr_code");
-        PDPageContentStream contentStream = new PDPageContentStream(document, page);
         
-        // Draw QR code at the top
-        contentStream.drawImage(pdImage, 50, 60, 200, 200);
-
-        // Add text below QR code
-        contentStream.beginText();
-        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 16);
-        contentStream.newLineAtOffset(50, 40);
-        
-        // Center the text
-        float textWidth = PDType1Font.HELVETICA_BOLD.getStringWidth(text) / 1000 * 16;
-        float pageWidth = page.getMediaBox().getWidth();
-        float xOffset = (pageWidth - textWidth) / 2;
-        contentStream.newLineAtOffset(xOffset, 0);
-        
-        contentStream.showText(text);
-        contentStream.endText();
-        contentStream.close();
-
-        // Save to byte array
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        document.save(baos);
-        document.close();
-        return baos.toByteArray();
+        try {
+            // Добавляем страницу A4
+            PDPage page = new PDPage(PDRectangle.A4);
+            document.addPage(page);
+            
+            // Создаем изображение из массива байтов
+            PDImageXObject pdImage = PDImageXObject.createFromByteArray(document, qrImageBytes, null);
+            
+            // Получаем размеры страницы
+            float pageWidth = page.getMediaBox().getWidth();
+            float pageHeight = page.getMediaBox().getHeight();
+            
+            // Определяем размер QR-кода (200x200 пикселей)
+            float qrSize = 200;
+            
+            // Позиционируем QR-код по центру страницы
+            float x = (pageWidth - qrSize) / 2;
+            float y = pageHeight - 250;
+            
+            // Создаем контент на странице
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            
+            // Рисуем QR-код
+            contentStream.drawImage(pdImage, x, y, qrSize, qrSize);
+            
+            // Добавляем текст
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            
+            // Центрируем текст
+            float textWidth = PDType1Font.HELVETICA.getStringWidth(text) / 1000 * 12;
+            float textX = (pageWidth - textWidth) / 2;
+            float textY = y - 20;
+            
+            contentStream.newLineAtOffset(textX, textY);
+            contentStream.showText(text);
+            contentStream.endText();
+            
+            // Закрываем контент-стрим
+            contentStream.close();
+            
+            // Сохраняем PDF в массив байтов
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            document.save(baos);
+            
+            return baos.toByteArray();
+        } finally {
+            // Закрываем документ в блоке finally
+            document.close();
+        }
     }
 }

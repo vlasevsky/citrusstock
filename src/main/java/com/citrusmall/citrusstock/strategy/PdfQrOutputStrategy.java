@@ -15,6 +15,11 @@ public class PdfQrOutputStrategy implements QrOutputStrategy {
     public byte[] generateOutput(Long batchId) throws Exception {
         return qrCodeService.generatePdfForBatch(batchId);
     }
+    
+    @Override
+    public byte[] generateOutputForBox(Long boxId) throws Exception {
+        return qrCodeService.generateAndStoreQRCodeWithTextForBox(boxId);
+    }
 
     @Override
     public String getContentType() {
@@ -24,5 +29,10 @@ public class PdfQrOutputStrategy implements QrOutputStrategy {
     @Override
     public String getContentDisposition(Long batchId) {
         return "attachment; filename=qr_codes_batch_" + batchId + ".pdf";
+    }
+    
+    @Override
+    public String getContentDispositionForBox(Long boxId) {
+        return "attachment; filename=qr_box_" + boxId + ".pdf";
     }
 }

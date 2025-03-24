@@ -4,6 +4,7 @@ import com.citrusmall.citrusstock.model.Box;
 import com.citrusmall.citrusstock.model.Product;
 import com.citrusmall.citrusstock.model.ProductBatch;
 import com.citrusmall.citrusstock.repository.BoxRepository;
+import com.citrusmall.citrusstock.util.FileStorageUtil;
 import com.citrusmall.citrusstock.util.QRCodeContentBuilder;
 import com.citrusmall.citrusstock.util.codegen.CodeGenerator;
 import com.citrusmall.citrusstock.util.codegen.CodeGeneratorFactory;
@@ -15,15 +16,20 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 @Service
 public class QRCodeService {
+
+    private static final int QR_CODE_SIZE = 200;
+    private static final String QR_CODES_DIR = "qr/codes";
 
     @Autowired
     private BoxRepository boxRepository;
@@ -32,36 +38,61 @@ public class QRCodeService {
     private CodeGeneratorFactory codeGeneratorFactory;
 
     /**
-     * Generates a QR code with product name text for a specific box,
-     * saves it to disk, and returns the image as a byte array (PDF).
+     * Генерирует QR-код для коробки и обновляет её поле code.
      *
-     * @param boxId the identifier of the box
-     * @return a byte array containing the PDF file
-     * @throws Exception if the box is not found or an error occurs during generation/storage
+     * @param boxId идентификатор коробки
+     * @return строка в формате Base64, содержащая QR-код
+     * @throws Exception в случае ошибки генерации
+     */
+    public String generateQRCodeForBox(Long boxId) throws Exception {
+        Box box = getBoxById(boxId);
+        byte[] qrImageBytes = generateQRCodeBytesForBox(boxId);
+        String base64Image = Base64.getEncoder().encodeToString(qrImageBytes);
+
+        box.setCode(base64Image);
+        boxRepository.save(box);
+
+        return base64Image;
+    }
+
+    /**
+     * Возвращает существующий QR-код для коробки или null, если его нет.
+     * Не генерирует QR-код, только возвращает существующий.
+     *
+     * @param boxId идентификатор коробки
+     * @return строка в формате Base64, содержащая QR-код, или null
+     * @throws Exception если коробка не найдена
+     */
+    public String getQRCodeForBox(Long boxId) throws Exception {
+        Box box = getBoxById(boxId);
+        return box.getCode();
+    }
+
+    /**
+     * Генерирует QR-код для коробки с текстом продукта под ним,
+     * сохраняет его на диск и возвращает в виде массива байтов PDF.
+     *
+     * @param boxId идентификатор коробки
+     * @return массив байтов, содержащий PDF с QR-кодом и текстом
+     * @throws Exception в случае ошибки генерации
      */
     public byte[] generateAndStoreQRCodeWithTextForBox(Long boxId) throws Exception {
-        Box box = boxRepository.findById(boxId)
-                .orElseThrow(() -> new IllegalArgumentException("Box with id " + boxId + " not found"));
+        // Находим коробку по ID и обеспечиваем наличие QR-кода
+        Box box = getBoxAndEnsureQRCode(boxId);
 
-        String qrContent = QRCodeContentBuilder.buildContent(box);
-        CodeGenerator generator = codeGeneratorFactory.getGenerator("QR");
-        byte[] qrImageBytes = generator.generateCodeImage(qrContent, 200, 200);
+        // Генерируем бинарный QR-код
+        byte[] qrImageBytes = generateQRCodeBytesForBox(boxId);
+
+        // Получаем название продукта для текста под QR-кодом
         String productName = box.getProductBatch().getProduct().getName();
+
+        // Создаем PDF с QR-кодом и текстом продукта
         byte[] pdfBytes = QRCodeWithTextUtil.addTextBelowQRCode(qrImageBytes, productName);
 
-        // Save the file under "qr/codes/product_{productId}/qr_box_{boxId}.pdf"
-        ProductBatch batch = box.getProductBatch();
-        Product product = batch.getProduct();
-        String productFolderName = "product_" + product.getId();
-        Path storageBasePath = Paths.get("qr", "codes");
-        Path productFolder = storageBasePath.resolve(productFolderName);
-        if (!Files.exists(productFolder)) {
-            Files.createDirectories(productFolder);
-        }
-        String filename = "qr_box_" + box.getId() + ".pdf";
-        Path filePath = productFolder.resolve(filename);
-        Files.write(filePath, pdfBytes);
+        // Сохраняем PDF-файл в директорию
+        savePdfFile(box, pdfBytes);
 
+        // Возвращаем PDF как массив байтов
         return pdfBytes;
     }
 
@@ -74,28 +105,22 @@ public class QRCodeService {
      * @throws Exception if an error occurs during generation
      */
     public byte[] generatePdfForBatch(Long batchId) throws Exception {
-        List<Box> boxes = boxRepository.findByProductBatch_Id(batchId);
-        if (boxes.isEmpty()) {
-            throw new IllegalArgumentException("No boxes found for product batch id " + batchId);
-        }
+        List<Box> boxes = getBoxesForBatch(batchId);
 
         PDFMergerUtility merger = new PDFMergerUtility();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         try {
-            // Создаем временный документ для первого PDF
-            byte[] firstPdfBytes = generateAndStoreQRCodeWithTextForBox(boxes.get(0).getId());
-            merger.addSource(new ByteArrayInputStream(firstPdfBytes));
-
-            // Добавляем остальные PDF-документы
-            for (int i = 1; i < boxes.size(); i++) {
-                byte[] pdfBytes = generateAndStoreQRCodeWithTextForBox(boxes.get(i).getId());
+            // Добавляем все PDF с QR-кодами в merger
+            for (Box box : boxes) {
+                byte[] pdfBytes = generateAndStoreQRCodeWithTextForBox(box.getId());
                 merger.addSource(new ByteArrayInputStream(pdfBytes));
             }
 
             // Объединяем все PDF-документы
             merger.setDestinationStream(baos);
             merger.mergeDocuments(null);
+
             return baos.toByteArray();
         } finally {
             baos.close();
@@ -111,10 +136,8 @@ public class QRCodeService {
      * @throws Exception if an error occurs during generation
      */
     public byte[] generateAndStoreQRCodesZipForBatch(Long batchId) throws Exception {
-        List<Box> boxes = boxRepository.findByProductBatch_Id(batchId);
-        if (boxes.isEmpty()) {
-            throw new IllegalArgumentException("No boxes found for product batch id " + batchId);
-        }
+        List<Box> boxes = getBoxesForBatch(batchId);
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             for (Box box : boxes) {
@@ -137,10 +160,83 @@ public class QRCodeService {
      * @throws Exception if no boxes are found
      */
     public Long getFirstBoxIdByBatchId(Long batchId) throws Exception {
+        List<Box> boxes = getBoxesForBatch(batchId);
+        return boxes.get(0).getId();
+    }
+
+    // Private helper methods
+
+    /**
+     * Получает коробку по идентификатору.
+     *
+     * @param boxId идентификатор коробки
+     * @return найденная коробка
+     * @throws IllegalArgumentException если коробка не найдена
+     */
+    private Box getBoxById(Long boxId) {
+        return boxRepository.findById(boxId)
+                .orElseThrow(() -> new IllegalArgumentException("Box with id " + boxId + " not found"));
+    }
+
+    /**
+     * Получает список коробок для партии.
+     *
+     * @param batchId идентификатор партии
+     * @return список коробок
+     * @throws IllegalArgumentException если коробки не найдены
+     */
+    private List<Box> getBoxesForBatch(Long batchId) {
         List<Box> boxes = boxRepository.findByProductBatch_Id(batchId);
         if (boxes.isEmpty()) {
             throw new IllegalArgumentException("No boxes found for product batch id " + batchId);
         }
-        return boxes.get(0).getId();
+        return boxes;
+    }
+
+    /**
+     * Получает коробку и гарантирует наличие QR-кода.
+     *
+     * @param boxId идентификатор коробки
+     * @return коробка с QR-кодом
+     * @throws Exception в случае ошибки
+     */
+    private Box getBoxAndEnsureQRCode(Long boxId) throws Exception {
+        Box box = getBoxById(boxId);
+
+        // Если у коробки нет QR-кода, генерируем его
+        if (box.getCode() == null || box.getCode().isEmpty()) {
+            generateQRCodeForBox(boxId);
+            // Перезагружаем коробку с обновленным QR-кодом
+            box = getBoxById(boxId);
+        }
+
+        return box;
+    }
+
+    /**
+     * Генерирует бинарные данные QR-кода для указанной коробки.
+     *
+     * @param boxId идентификатор коробки
+     * @return массив байтов с QR-кодом в формате PNG
+     * @throws Exception в случае ошибки
+     */
+    public byte[] generateQRCodeBytesForBox(Long boxId) throws Exception {
+        Box box = getBoxById(boxId);
+        String qrContent = QRCodeContentBuilder.buildContent(box);
+        CodeGenerator generator = codeGeneratorFactory.getGenerator("QR");
+        return generator.generateCodeImage(qrContent, QR_CODE_SIZE, QR_CODE_SIZE);
+    }
+
+    /**
+     * Сохраняет PDF-файл в соответствующую директорию.
+     *
+     * @param box      коробка
+     * @param pdfBytes содержимое PDF-файла
+     * @throws IOException в случае ошибки ввода-вывода
+     */
+    private void savePdfFile(Box box, byte[] pdfBytes) throws IOException {
+        Long productId = box.getProductBatch().getProduct().getId();
+        String filename = FileStorageUtil.generateQrCodePdfFileName(box.getId());
+        FileStorageUtil.saveQrCodeFile(productId, filename, pdfBytes);
     }
 }
