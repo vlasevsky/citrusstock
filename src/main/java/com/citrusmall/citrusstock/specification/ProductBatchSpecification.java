@@ -3,15 +3,14 @@ package com.citrusmall.citrusstock.specification;
 import com.citrusmall.citrusstock.dto.ProductBatchFilterCriteria;
 import com.citrusmall.citrusstock.model.ProductBatch;
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
 
 /**
  * Спецификация для динамической фильтрации партий товаров.
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
  * и по списку zoneIds, а также по диапазону дат receivedAt.
  */
 public class ProductBatchSpecification implements Specification<ProductBatch> {
-
+    private static final Logger logger = LoggerFactory.getLogger(ProductBatchSpecification.class);
     private final ProductBatchFilterCriteria criteria;
 
     public ProductBatchSpecification(ProductBatchFilterCriteria criteria) {
@@ -28,31 +27,51 @@ public class ProductBatchSpecification implements Specification<ProductBatch> {
 
     @Override
     public Predicate toPredicate(Root<ProductBatch> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
-        // Начинаем с пустой конъюнкции (условие "true")
-        Predicate predicate = cb.conjunction();
+        try {
+            List<Predicate> predicates = new ArrayList<>();
 
-        if (criteria.getProductIds() != null && !criteria.getProductIds().isEmpty()) {
-            predicate = cb.and(predicate, root.get("product").get("id").in(criteria.getProductIds()));
+            // Фильтр по productIds
+            if (criteria.getProductIds() != null && !criteria.getProductIds().isEmpty()) {
+                predicates.add(root.get("product").get("id").in(criteria.getProductIds()));
+            }
+
+            // Фильтр по supplierIds
+            if (criteria.getSupplierIds() != null && !criteria.getSupplierIds().isEmpty()) {
+                predicates.add(root.get("supplier").get("id").in(criteria.getSupplierIds()));
+            }
+
+            // Фильтр по статусам
+            if (criteria.getStatusList() != null && !criteria.getStatusList().isEmpty()) {
+                List<GoodsStatus> statuses = new ArrayList<>();
+                for (String status : criteria.getStatusList()) {
+                    try {
+                        statuses.add(GoodsStatus.valueOf(status));
+                    } catch (IllegalArgumentException e) {
+                        logger.warn("Invalid status value: {}", status);
+                    }
+                }
+                if (!statuses.isEmpty()) {
+                    predicates.add(root.get("status").in(statuses));
+                }
+            }
+
+            // Фильтр по zoneIds
+            if (criteria.getZoneIds() != null && !criteria.getZoneIds().isEmpty()) {
+                predicates.add(root.get("zone").get("id").in(criteria.getZoneIds()));
+            }
+
+            // Фильтр по дате получения (receivedAt)
+            if (criteria.getReceivedFrom() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("receivedAt"), criteria.getReceivedFrom()));
+            }
+            if (criteria.getReceivedTo() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("receivedAt"), criteria.getReceivedTo()));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        } catch (Exception e) {
+            logger.error("Error building predicate: {}", e.getMessage(), e);
+            throw e;
         }
-        if (criteria.getSupplierIds() != null && !criteria.getSupplierIds().isEmpty()) {
-            predicate = cb.and(predicate, root.get("supplier").get("id").in(criteria.getSupplierIds()));
-        }
-        if (criteria.getStatusList() != null && !criteria.getStatusList().isEmpty()) {
-            // Преобразуем строки в enum GoodsStatus
-            List<GoodsStatus> statusEnums = criteria.getStatusList().stream()
-                    .map(GoodsStatus::valueOf)
-                    .collect(Collectors.toList());
-            predicate = cb.and(predicate, root.get("status").in(statusEnums));
-        }
-        if (criteria.getZoneIds() != null && !criteria.getZoneIds().isEmpty()) {
-            predicate = cb.and(predicate, root.get("zone").get("id").in(criteria.getZoneIds()));
-        }
-        if (criteria.getReceivedFrom() != null) {
-            predicate = cb.and(predicate, cb.greaterThanOrEqualTo(root.get("receivedAt"), criteria.getReceivedFrom()));
-        }
-        if (criteria.getReceivedTo() != null) {
-            predicate = cb.and(predicate, cb.lessThanOrEqualTo(root.get("receivedAt"), criteria.getReceivedTo()));
-        }
-        return predicate;
     }
 }

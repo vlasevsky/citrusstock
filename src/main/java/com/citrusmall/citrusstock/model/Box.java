@@ -2,7 +2,8 @@ package com.citrusmall.citrusstock.model;
 
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
@@ -10,8 +11,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "boxes")
-@Data
-@ToString(exclude = {"productBatch", "scannedBy"})
+@Getter
+@Setter
+@ToString(exclude = {"productBatch", "scannedBy", "scanEvents"})
 public class Box {
 
     @Id
@@ -28,6 +30,7 @@ public class Box {
     @Enumerated(EnumType.STRING)
     private GoodsStatus status;
 
+    @Column(name = "scanned_at")
     private LocalDateTime scannedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)

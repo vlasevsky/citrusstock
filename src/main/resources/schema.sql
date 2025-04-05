@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS product_batches;
 DROP TABLE IF EXISTS zones;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS suppliers;
+DROP TABLE IF EXISTS refresh_tokens;
 DROP TABLE IF EXISTS users;
 
 -- Products table
@@ -53,9 +54,24 @@ CREATE TABLE boxes (
 -- Users table
 CREATE TABLE users (
                        id BIGSERIAL PRIMARY KEY,
-                       username VARCHAR(255) NOT NULL,
+                       username VARCHAR(255) NOT NULL UNIQUE,
                        password VARCHAR(255) NOT NULL,
-                       role VARCHAR(50) NOT NULL
+                       email VARCHAR(255) NOT NULL UNIQUE,
+                       role VARCHAR(50) NOT NULL,
+                       enabled BOOLEAN NOT NULL DEFAULT true,
+                       last_active_at TIMESTAMP,
+                       created_at TIMESTAMP NOT NULL,
+                       updated_at TIMESTAMP NOT NULL
+);
+
+-- Refresh tokens table
+CREATE TABLE refresh_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expiry_date TIMESTAMP NOT NULL,
+    revoked BOOLEAN NOT NULL DEFAULT false,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Scan events table

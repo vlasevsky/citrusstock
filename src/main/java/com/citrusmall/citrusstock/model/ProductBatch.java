@@ -27,6 +27,7 @@ public class ProductBatch {
     private Supplier supplier;
 
    // private Integer totalBoxes;
+    @Column(name = "received_at")
     private LocalDateTime receivedAt;
 
     @Enumerated(EnumType.STRING)

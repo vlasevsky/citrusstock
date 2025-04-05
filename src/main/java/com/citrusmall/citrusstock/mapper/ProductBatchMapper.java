@@ -22,8 +22,7 @@ public interface ProductBatchMapper {
     // Маппинг с использованием вложенных мапперов для product, supplier и zone
     @Mapping(source = "product", target = "product")
     @Mapping(source = "supplier", target = "supplier")
-    @Mapping(expression = "java(EnumLocalizer.localizeGoodsStatus(productBatch.getStatus()))", target = "status")
-    // Передаем объект zone целиком, а его локализацию выполнит ZoneMapper
+    @Mapping(source = "status", target = "status")
     @Mapping(source = "zone", target = "zone")
     ProductBatchResponse toProductBatchResponse(ProductBatch productBatch);
 }

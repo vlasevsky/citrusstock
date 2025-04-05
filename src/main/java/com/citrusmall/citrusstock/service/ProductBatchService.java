@@ -6,6 +6,8 @@ import com.citrusmall.citrusstock.model.*;
 import com.citrusmall.citrusstock.model.enums.GoodsStatus;
 import com.citrusmall.citrusstock.repository.*;
 import com.citrusmall.citrusstock.specification.ProductBatchSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +19,8 @@ import java.util.List;
 
 @Service
 public class ProductBatchService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductBatchService.class);
 
     @Autowired
     private ProductBatchRepository productBatchRepository;
@@ -79,8 +83,16 @@ public class ProductBatchService {
 
 
     public Page<ProductBatch> getFilteredProductBatches(ProductBatchFilterCriteria criteria, Pageable pageable) {
-        ProductBatchSpecification spec = new ProductBatchSpecification(criteria);
-        return productBatchRepository.findAll(spec, pageable);
+        try {
+            logger.info("Getting filtered product batches with criteria: {} and pageable: {}", criteria, pageable);
+            ProductBatchSpecification spec = new ProductBatchSpecification(criteria);
+            Page<ProductBatch> result = productBatchRepository.findAll(spec, pageable);
+            logger.info("Successfully retrieved {} product batches", result.getTotalElements());
+            return result;
+        } catch (Exception e) {
+            logger.error("Error getting filtered product batches: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to get filtered product batches: " + e.getMessage(), e);
+        }
     }
 
     public ProductBatch updateProductBatch(Long id, ProductBatchCreateRequest request) {
