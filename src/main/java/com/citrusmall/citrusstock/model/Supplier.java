@@ -3,7 +3,6 @@ package com.citrusmall.citrusstock.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-
 @Entity
 @Table(name = "suppliers")
 @Data

@@ -1,6 +1,7 @@
 package com.citrusmall.citrusstock.controller;
 
 
+import com.citrusmall.citrusstock.dto.ScanModeDTO;
 import com.citrusmall.citrusstock.model.enums.*;
 import com.citrusmall.citrusstock.util.EnumLocalizer;
 import org.springframework.http.ResponseEntity;
@@ -27,9 +28,9 @@ public class LookupController {
 
 
     @GetMapping("/scan-mode")
-    public ResponseEntity<List<String>> getScanModes() {
-        List<String> modes = Arrays.stream(ScanMode.values())
-                .map(EnumLocalizer::localizeScanMode)
+    public ResponseEntity<List<ScanModeDTO>> getScanModes() {
+        List<ScanModeDTO> modes = Arrays.stream(ScanMode.values())
+                .map(mode -> new ScanModeDTO(mode, EnumLocalizer.localizeScanMode(mode)))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(modes);
     }

@@ -18,12 +18,12 @@ public class ScanEvent {
 
     // Ссылка на коробку
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "box_id")
+    @JoinColumn(name = "box_id", nullable = false)
     private Box box;
 
     // Ссылка на оператора
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @Enumerated(EnumType.STRING)

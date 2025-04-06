@@ -16,6 +16,12 @@ public class PngQrOutputStrategy implements QrOutputStrategy {
         Long firstBoxId = qrCodeService.getFirstBoxIdByBatchId(batchId);
         return qrCodeService.generateAndStoreQRCodeWithTextForBox(firstBoxId);
     }
+    
+    @Override
+    public byte[] generateOutputForBox(Long boxId) throws Exception {
+        // Получаем QR-код для коробки в виде изображения PNG
+        return qrCodeService.generateQRCodeBytesForBox(boxId);
+    }
 
     @Override
     public String getContentType() {
@@ -25,5 +31,10 @@ public class PngQrOutputStrategy implements QrOutputStrategy {
     @Override
     public String getContentDisposition(Long batchId) {
         return "inline; filename=qr_code_batch_" + batchId + ".png";
+    }
+    
+    @Override
+    public String getContentDispositionForBox(Long boxId) {
+        return "inline; filename=qr_box_" + boxId + ".png";
     }
 }
