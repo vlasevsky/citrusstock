@@ -19,11 +19,11 @@ public class JwtConfig {
 
     @NotNull(message = "Access token expiration must not be null")
     @Positive(message = "Access token expiration must be positive")
-    private Long accessTokenExpiration = 900000L; // 15 minutes
+    private Long accessTokenExpiration = 10000L; // 10 seconds
 
     @NotNull(message = "Refresh token expiration must not be null")
     @Positive(message = "Refresh token expiration must be positive")
-    private Long refreshTokenExpiration = 604800000L; // 7 days
+    private Long refreshTokenExpiration = 30000L; // 30 seconds
 
     @NotBlank(message = "JWT issuer must not be blank")
     private String issuer = "citrusstock";

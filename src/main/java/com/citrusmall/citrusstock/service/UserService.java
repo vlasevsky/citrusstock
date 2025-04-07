@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -51,5 +52,17 @@ public class UserService {
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public User updateUserStatus(Long id, boolean enabled) {
+        User user = getUserById(id);
+        user.setEnabled(enabled);
+        return userRepository.save(user);
+    }
+
+    public void updateLastActive(Long id, Instant lastActiveAt) {
+        User user = getUserById(id);
+        user.setLastActiveAt(lastActiveAt);
+        userRepository.save(user);
     }
 }
