@@ -1,5 +1,6 @@
 -- Drop tables in обратном порядке (учитывая внешние ключи)
 DROP TABLE IF EXISTS scan_events;
+DROP TABLE IF EXISTS refresh_tokens;
 DROP TABLE IF EXISTS boxes;
 DROP TABLE IF EXISTS product_batches;
 DROP TABLE IF EXISTS zones;
@@ -55,7 +56,24 @@ CREATE TABLE users (
                        id BIGSERIAL PRIMARY KEY,
                        username VARCHAR(255) NOT NULL,
                        password VARCHAR(255) NOT NULL,
-                       role VARCHAR(50) NOT NULL
+                       role VARCHAR(50) NOT NULL,
+                       account_non_expired BOOLEAN DEFAULT TRUE,
+                       account_non_locked BOOLEAN DEFAULT TRUE,
+                       credentials_non_expired BOOLEAN DEFAULT TRUE,
+                       enabled BOOLEAN DEFAULT TRUE
+);
+
+-- Refresh tokens table
+CREATE TABLE refresh_tokens (
+                           id BIGSERIAL PRIMARY KEY,
+                           user_id BIGINT NOT NULL,
+                           token VARCHAR(255) NOT NULL,
+                           expiry_date TIMESTAMP NOT NULL,
+                           issued_at TIMESTAMP NOT NULL,
+                           revoked BOOLEAN DEFAULT FALSE,
+                           device_info VARCHAR(255),
+                           ip_address VARCHAR(45),
+                           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Scan events table

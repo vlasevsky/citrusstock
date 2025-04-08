@@ -18,11 +18,11 @@ INSERT INTO zones (name, color) VALUES
                                     ('SHIPMENT', '#FF0000'),
                                     ('STORAGE', '#0000FF');
 
--- Вставляем пользователей (условно зашифрованные пароли)
+
 INSERT INTO users (username, password, role) VALUES
-                                                 ('manager', 'encrypted_password', 'WAREHOUSE_MANAGER'),
-                                                 ('operator1', 'encrypted_password', 'OPERATOR'),
-                                                 ('operator2', 'encrypted_password', 'OPERATOR');
+                                                 ('manager', '$2a$10$H/rYcF4ptiZk1MPkbBXQuu57VNk8KBaxgfZVbG.gZWars.EXRBhzC', 'MANAGER'),
+                                                 ('operator1', '$2a$10$H/rYcF4ptiZk1MPkbBXQuu57VNk8KBaxgfZVbG.gZWars.EXRBhzC', 'OPERATOR'),
+                                                 ('operator2', '$2a$10$H/rYcF4ptiZk1MPkbBXQuu57VNk8KBaxgfZVbG.gZWars.EXRBhzC', 'OPERATOR');
 
 -- Вставляем партии товаров.
 -- Согласно бизнес-логике:
