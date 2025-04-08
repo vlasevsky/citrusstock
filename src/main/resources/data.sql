@@ -20,9 +20,9 @@ INSERT INTO zones (name, color) VALUES
 
 
 INSERT INTO users (username, password, role) VALUES
-                                                 ('manager', '$2a$10$H/rYcF4ptiZk1MPkbBXQuu57VNk8KBaxgfZVbG.gZWars.EXRBhzC', 'MANAGER'),
-                                                 ('operator1', '$2a$10$H/rYcF4ptiZk1MPkbBXQuu57VNk8KBaxgfZVbG.gZWars.EXRBhzC', 'OPERATOR'),
-                                                 ('operator2', '$2a$10$H/rYcF4ptiZk1MPkbBXQuu57VNk8KBaxgfZVbG.gZWars.EXRBhzC', 'OPERATOR');
+                                                 ('manager', '$2a$10$ffeoCp3G45qV0i5ycql1q.XSe8Vtilo178Lc7HJ3gQtUU918F7BLG', 'MANAGER'),
+                                                 ('operator1', '$2a$10$ffeoCp3G45qV0i5ycql1q.XSe8Vtilo178Lc7HJ3gQtUU918F7BLG', 'OPERATOR'),
+                                                 ('operator2', '$2a$10$ffeoCp3G45qV0i5ycql1q.XSe8Vtilo178Lc7HJ3gQtUU918F7BLG', 'OPERATOR');
 
 -- Вставляем партии товаров.
 -- Согласно бизнес-логике:

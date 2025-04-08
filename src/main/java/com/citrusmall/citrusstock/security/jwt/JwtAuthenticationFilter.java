@@ -29,6 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        // Пропускаем проверку токена для эндпоинт  а обновления токена чтобы не было 401 ошибки когда токен заканчивается и не пускает даже на обновление токена
+        if (request.getRequestURI().equals("/api/auth/refresh")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String username;
@@ -39,7 +45,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // Извлекаем JWT из заголовка
         jwt = authHeader.substring(7);
         
         try {
@@ -67,11 +72,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     // Устанавливаем аутентификацию в контекст безопасности
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    // Если токен невалиден, возвращаем 401
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.getWriter().write("Invalid or expired token");
+                    return;
                 }
             }
         } catch (Exception e) {
-            // Если во время обработки токена возникла ошибка, игнорируем и продолжаем цепочку фильтров
+            // При любой ошибке обработки токена возвращаем 401
             logger.error("JWT token processing error", e);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid or expired token");
+            return;
         }
         
         // Продолжаем цепочку фильтров
