@@ -1,21 +1,22 @@
 package com.citrusmall.citrusstock.model;
 
-import com.citrusmall.citrusstock.model.enums.Role;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
+/**
+ * Entity representing a user in the system.
+ * Implements UserDetails for Spring Security integration.
+ */
 @Entity
 @Table(name = "users")
 @Data
-@ToString(exclude = {"refreshTokens"})
+@ToString(exclude = {"refreshTokens", "role"})
 public class User implements UserDetails {
 
     @Id
@@ -28,7 +29,8 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @Enumerated(EnumType.STRING)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id")
     private Role role;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -41,7 +43,7 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()));
+        return role.getAuthorities();
     }
 
     @Override

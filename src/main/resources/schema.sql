@@ -1,12 +1,38 @@
 -- Drop tables in обратном порядке (учитывая внешние ключи)
 DROP TABLE IF EXISTS scan_events;
 DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS roles_permissions;
+DROP TABLE IF EXISTS permissions;
 DROP TABLE IF EXISTS boxes;
 DROP TABLE IF EXISTS product_batches;
 DROP TABLE IF EXISTS zones;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS suppliers;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS roles;
+
+-- Roles table (роли пользователей)
+CREATE TABLE roles (
+                      id BIGSERIAL PRIMARY KEY,
+                      name VARCHAR(50) NOT NULL UNIQUE,
+                      description VARCHAR(255)
+);
+
+-- Permissions table (разрешения)
+CREATE TABLE permissions (
+                         id BIGSERIAL PRIMARY KEY,
+                         name VARCHAR(100) NOT NULL UNIQUE,
+                         description VARCHAR(255)
+);
+
+-- Roles-Permissions mapping table (связь роли-разрешения)
+CREATE TABLE roles_permissions (
+                            role_id BIGINT NOT NULL,
+                            permission_id BIGINT NOT NULL,
+                            PRIMARY KEY (role_id, permission_id),
+                            FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+                            FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+);
 
 -- Products table
 CREATE TABLE products (
@@ -54,13 +80,14 @@ CREATE TABLE boxes (
 -- Users table
 CREATE TABLE users (
                        id BIGSERIAL PRIMARY KEY,
-                       username VARCHAR(255) NOT NULL,
+                       username VARCHAR(255) NOT NULL UNIQUE,
                        password VARCHAR(255) NOT NULL,
-                       role VARCHAR(50) NOT NULL,
+                       role_id BIGINT NOT NULL,
                        account_non_expired BOOLEAN DEFAULT TRUE,
                        account_non_locked BOOLEAN DEFAULT TRUE,
                        credentials_non_expired BOOLEAN DEFAULT TRUE,
-                       enabled BOOLEAN DEFAULT TRUE
+                       enabled BOOLEAN DEFAULT TRUE,
+                       FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
 -- Refresh tokens table
