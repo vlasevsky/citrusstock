@@ -22,7 +22,8 @@ CREATE TABLE roles (
 CREATE TABLE permissions (
                          id BIGSERIAL PRIMARY KEY,
                          name VARCHAR(100) NOT NULL UNIQUE,
-                         description VARCHAR(255)
+                         description VARCHAR(255),
+                         category VARCHAR(50) NOT NULL
 );
 
 -- Roles-Permissions mapping table (связь роли-разрешения)

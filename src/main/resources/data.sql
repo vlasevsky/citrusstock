@@ -5,55 +5,55 @@ INSERT INTO roles (name, description) VALUES
     ('OPERATOR', 'Оператор склада с доступом к сканированию');
 
 -- Вставляем права доступа
-INSERT INTO permissions (name, description) VALUES
+INSERT INTO permissions (name, description, category) VALUES
     -- Права администратора
-    ('admin:manage_users', 'Управление пользователями системы'),
-    ('admin:manage_roles', 'Управление ролями и правами доступа'),
-    ('admin:view_all', 'Просмотр всех данных системы'),
+    ('admin:manage_users', 'Управление пользователями системы', 'admin'),
+    ('admin:manage_roles', 'Управление ролями и правами доступа', 'admin'),
+    ('admin:view_all', 'Просмотр всех данных системы', 'admin'),
     
     -- Права для пользователей
-    ('users:read', 'Просмотр информации о пользователях'),
-    ('users:create', 'Создание новых пользователей'),
-    ('users:update', 'Обновление существующих пользователей'),
-    ('users:delete', 'Удаление пользователей'),
+    ('users:read', 'Просмотр информации о пользователях', 'users'),
+    ('users:create', 'Создание новых пользователей', 'users'),
+    ('users:update', 'Обновление существующих пользователей', 'users'),
+    ('users:delete', 'Удаление пользователей', 'users'),
     
     -- Права для коробок
-    ('boxes:read', 'Просмотр информации о коробках'),
-    ('boxes:create', 'Создание новых коробок'),
-    ('boxes:update', 'Обновление существующих коробок'),
-    ('boxes:delete', 'Удаление коробок'),
+    ('boxes:read', 'Просмотр информации о коробках', 'boxes'),
+    ('boxes:create', 'Создание новых коробок', 'boxes'),
+    ('boxes:update', 'Обновление существующих коробок', 'boxes'),
+    ('boxes:delete', 'Удаление коробок', 'boxes'),
     
     -- Права для сканирования
-    ('scan:read', 'Просмотр истории сканирования'),
-    ('scan:create', 'Сканирование коробок'),
+    ('scan:read', 'Просмотр истории сканирования', 'scan'),
+    ('scan:create', 'Сканирование коробок', 'scan'),
     
     -- Права для партий продуктов
-    ('batches:read', 'Просмотр информации о партиях продуктов'),
-    ('batches:create', 'Создание новых партий продуктов'),
-    ('batches:update', 'Обновление существующих партий'),
-    ('batches:delete', 'Удаление партий продуктов'),
+    ('batches:read', 'Просмотр информации о партиях продуктов', 'batches'),
+    ('batches:create', 'Создание новых партий продуктов', 'batches'),
+    ('batches:update', 'Обновление существующих партий', 'batches'),
+    ('batches:delete', 'Удаление партий продуктов', 'batches'),
     
     -- Права для продуктов
-    ('products:read', 'Просмотр информации о продуктах'),
-    ('products:create', 'Создание новых продуктов'),
-    ('products:update', 'Обновление существующих продуктов'),
-    ('products:delete', 'Удаление продуктов'),
+    ('products:read', 'Просмотр информации о продуктах', 'products'),
+    ('products:create', 'Создание новых продуктов', 'products'),
+    ('products:update', 'Обновление существующих продуктов', 'products'),
+    ('products:delete', 'Удаление продуктов', 'products'),
     
     -- Права для зон
-    ('zones:read', 'Просмотр информации о зонах склада'),
-    ('zones:create', 'Создание новых зон'),
-    ('zones:update', 'Обновление существующих зон'),
-    ('zones:delete', 'Удаление зон'),
+    ('zones:read', 'Просмотр информации о зонах склада', 'zones'),
+    ('zones:create', 'Создание новых зон', 'zones'),
+    ('zones:update', 'Обновление существующих зон', 'zones'),
+    ('zones:delete', 'Удаление зон', 'zones'),
     
     -- Права для поставщиков
-    ('suppliers:read', 'Просмотр информации о поставщиках'),
-    ('suppliers:create', 'Создание новых поставщиков'),
-    ('suppliers:update', 'Обновление существующих поставщиков'),
-    ('suppliers:delete', 'Удаление поставщиков'),
+    ('suppliers:read', 'Просмотр информации о поставщиках', 'suppliers'),
+    ('suppliers:create', 'Создание новых поставщиков', 'suppliers'),
+    ('suppliers:update', 'Обновление существующих поставщиков', 'suppliers'),
+    ('suppliers:delete', 'Удаление поставщиков', 'suppliers'),
     
     -- Права для QR-кодов
-    ('qrcodes:generate', 'Генерация QR-кодов'),
-    ('qrcodes:read', 'Просмотр QR-кодов');
+    ('qrcodes:generate', 'Генерация QR-кодов', 'qrcodes'),
+    ('qrcodes:read', 'Просмотр QR-кодов', 'qrcodes');
 
 -- Назначаем все разрешения роли ADMIN
 INSERT INTO roles_permissions (role_id, permission_id)
@@ -65,22 +65,13 @@ WHERE r.name = 'ADMIN';
 INSERT INTO roles_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r, permissions p
-WHERE r.name = 'MANAGER' AND p.name NOT LIKE 'admin:%';
+WHERE r.name = 'MANAGER' AND p.category != 'admin';
 
 -- Назначаем ограниченные разрешения для операторов (чтение + сканирование)
 INSERT INTO roles_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r, permissions p
-WHERE r.name = 'OPERATOR' AND (
-    p.name = 'scan:read' OR
-    p.name = 'scan:create' OR
-    p.name = 'boxes:read' OR
-    p.name = 'batches:read' OR
-    p.name = 'products:read' OR
-    p.name = 'zones:read' OR
-    p.name = 'suppliers:read' OR
-    p.name = 'qrcodes:read'
-);
+WHERE r.name = 'OPERATOR' AND (p.category = 'scan' OR p.name LIKE '%:read');
 
 -- Вставляем продукты
 INSERT INTO products (name) VALUES
