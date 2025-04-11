@@ -26,6 +26,9 @@ public class Permission {
     
     private String description;
     
+    @Column(nullable = false)
+    private String category;
+    
     @ManyToMany(mappedBy = "permissions")
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
